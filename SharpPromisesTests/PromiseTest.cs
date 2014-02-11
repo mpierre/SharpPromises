@@ -148,7 +148,7 @@ namespace SharpPromisesTests
 			for (int i = 0; i < deferreds.Length; i++) {
 				var d = new Deferred<object>();
 				deferreds[i] = d;
-				var time = new Random().Next(1000);
+				var time = new Random().Next(50);
 				int j = i;
 				TimerCallback callback = (s) => {
 					Console.WriteLine("Resolving %d after %dms", j, time);
