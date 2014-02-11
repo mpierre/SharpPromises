@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System;
 using SharpPromises;
+using System.Threading;
 
 namespace SharpPromisesTests
 {
@@ -118,6 +119,55 @@ namespace SharpPromisesTests
 				.Done(r => result = result + " " + r.Length);
 			deferred.Resolve(23);
 			Assert.AreEqual("Hello 23 2", result);
+		}
+
+		[Test ()]
+		public void TestWhen()
+		{
+			Deferred<object>[] deferreds = new Deferred<object>[10];
+			for (int i = 0; i < deferreds.Length; i++) {
+				var d = new Deferred<object>();
+				deferreds[i] = d;
+				d.Resolve(i);
+			}
+			int sum = 0;
+			Deferred<object>.When(deferreds)
+				.Done(values => {
+					foreach (var v in values) {
+						sum += (int)v;
+					}
+				})
+				.Fail(e => Console.Write(e.Message));
+			Assert.AreEqual(45, sum);
+		}
+
+		[Test()]
+		public void TestWhenWithTimeout()
+		{
+			Deferred<object>[] deferreds = new Deferred<object>[10];
+			for (int i = 0; i < deferreds.Length; i++) {
+				var d = new Deferred<object>();
+				deferreds[i] = d;
+				var time = new Random().Next(1000);
+				int j = i;
+				TimerCallback callback = (s) => {
+					Console.WriteLine("Resolving %d after %dms", j, time);
+					d.Resolve(j);
+				};
+				new Timer(callback, null, time, Timeout.Infinite);
+			}
+			int sum = 0;
+			AutoResetEvent resetEvent = new AutoResetEvent(false);
+			Deferred<object>.When(deferreds)
+				.Done(values => {
+					foreach (var v in values) {
+						sum += (int)v;
+					}
+				})
+				.Fail(e => Console.Write(e.Message))
+				.Always((s, v, ex) => resetEvent.Set());
+			resetEvent.WaitOne();
+			Assert.AreEqual(45, sum);
 		}
 	}
 }

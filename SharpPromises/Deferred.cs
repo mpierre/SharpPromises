@@ -107,5 +107,28 @@ namespace SharpPromises
         {
             return this;
         }
+
+		public static Promise<object[]> When(params Promise<object>[] promises)
+		{
+			var deferred = new Deferred<object[]>();
+			int count = promises.Length;
+			object[] results = new object[count];
+			if (count == 0) {
+				return deferred.Resolve(results);
+			}
+			for (int i = 0; i < promises.Length; i++) {
+				int j = i;
+				promises[i]
+					.Done(o => {
+						results[j] = o;
+						if (--count <= 0) {
+							deferred.Resolve(results);
+						}
+					})
+					.Fail(e => deferred.Reject(e));
+			}
+
+			return deferred.Promise();
+		}
     }
 }
