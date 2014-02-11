@@ -33,49 +33,49 @@ namespace SharpPromises
             return deferred.Promise();
         }
 
-        public void Resolve(T value)
+		public Promise<T> Resolve(T value)
         {
-			if (Status != PromiseStatus.PENDING) { return; }
+			if (Status != PromiseStatus.PENDING) { return this; }
             
             Result = value;
 			Status = PromiseStatus.RESOLVED;
 			foreach (Action<T> func in dones) {
                 func(Result);
             }
+			return this;
         }
 
-        public void Reject(Exception error)
+		public Promise<T> Reject(Exception error)
 		{
-			if (Status != PromiseStatus.PENDING) { return; }
+			if (Status != PromiseStatus.PENDING) { return this; }
 
             Error = error;
 			Status = PromiseStatus.REJECTED;
 			foreach (Action<Exception> func in fails) {
 				func(Error);
             }
+			return this;
         }
 
         public Promise<T> Done(Action<T> func)
         {
 			if (func != null) {
-				if (Status == PromiseStatus.RESOLVED) {
-                    func(Result);
-				} else {
-                    dones.Add(func);
-                }
+				switch (Status) {
+					case PromiseStatus.RESOLVED: func(Result); break;
+					case PromiseStatus.PENDING: dones.Add(func); break;
+				}
             }
             return this;
         }
 
         public Promise<T> Fail(Action<Exception> func)
         {
-            if (func != null)
+			if (func != null)
             {
-				if (Status == PromiseStatus.REJECTED) {
-                    func(Error);
-				} else {
-                    fails.Add(func);
-                }
+				switch (Status) {
+					case PromiseStatus.REJECTED: func(Error); break;
+					case PromiseStatus.PENDING: fails.Add(func); break;
+				}
             }
             return this;
         }
